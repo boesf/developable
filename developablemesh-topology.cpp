@@ -8,6 +8,46 @@
 using namespace Eigen;
 using namespace std;
 
+bool DevelopableMesh::setupMesh(){
+    boundaries_.clear();
+    startq_.resize(3*mesh_.n_vertices());
+    set<double> zvalues;
+    for(OMMesh::VertexIter vi = mesh_.vertices_begin(); vi != mesh_.vertices_end(); ++vi){
+        OMMesh::Point p = mesh_.point(*vi);
+        for(int i = 0; i < 3; i++){
+            startq_[3*vi->idx()+i] = p[i];
+        }
+        zvalues.insert(mesh_.point(*vi)[2]);
+        cout << mesh_.point(*vi)[2] << endl;
+    }
+
+    const double zmin = *(zvalues.begin());
+    const double zmax = *(--zvalues.end());
+
+    cout << zmin << " zmax " << zmax << endl;
+    Boundary lower, upper;
+    assert(zmin != zmax);
+    for(OMMesh::VertexIter vi = mesh_.vertices_begin(); vi != mesh_.vertices_end(); ++vi)
+    {
+        if(mesh_.point(*vi)[2] == zmin){
+            lower.bdryPos.push_back(point2Vector(mesh_.point(*vi)));
+            lower.bdryVerts.push_back(vi->idx());
+        }
+        else if(mesh_.point(*vi)[2] == zmax){
+            upper.bdryPos.push_back(point2Vector(mesh_.point(*vi)));
+            upper.bdryVerts.push_back(vi->idx());
+        }
+        else
+            cout << "ERROR: Nonboundary points!" << endl;
+
+    }
+    boundaries_.push_back(upper);
+    boundaries_.push_back(lower);
+    spring_constant_ = 1.0;
+
+    return true;
+}
+
 bool DevelopableMesh::loadOBJPair(const char *mesh3D, const char *mesh2D, double W, double H)
 {
     OMMesh mesh1;

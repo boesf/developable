@@ -29,8 +29,7 @@ SOURCES += main.cpp \
     developablemesh-topology.cpp \
     mathutil.cpp \
     materialmesh.cpp \
-    projectionnlp.cpp \
-    springmesh.cpp
+    projectionnlp.cpp
 
 HEADERS += \
     mainwindow.h \
@@ -49,8 +48,7 @@ HEADERS += \
     periodicmesh.h \
     mathutil.h \
     materialmesh.h \
-    projectionnlp.h \
-    springmesh.h
+    projectionnlp.h
 
 LIBS    += -lGLU -lpng -L$${PWD}/ext/OpenMesh/lib -lOpenMeshCored -L/Users/work/libs/ipopt//lib -L/usr/local/lib/gcc/x86_64-apple-darwin13.1.0/4.9.0 -L/usr/local/lib/gcc/x86_64-apple-darwin13.1.0/4.9.0/../../.. -L/Users/work/libs/ipopt//lib -lipopt -framework vecLib -lm -ldl -lcoinmumps -framework vecLib -lgfortran -lSystem -lquadmath -lm -lcoinmetis
 

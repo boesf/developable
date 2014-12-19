@@ -85,6 +85,7 @@ void MainWindow::saveScreenshot(const string &filename)
     QString curdir = QDir::currentPath();
     string fullname = string(curdir.toStdString()) + "/output/" + filename;
     p.save(QString::fromUtf8(fullname.c_str()));
+//    cout << "Screenshot saved as " << fullname << endl;
     //ui->GLwidget->saveScreenshot(fullname);
 }
 

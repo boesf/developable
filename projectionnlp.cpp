@@ -51,7 +51,18 @@ bool ProjectionNLP::get_bounds_info(Ipopt::Index n, Ipopt::Number *x_l, Ipopt::N
     vector<vector<T> > Hg;
     dm_.buildConstraints(startq_, g, Dg, Hg);
 
-    for(int i=0; i<(int)g.size(); i++)
+    for(int i=0; i<(int)dm_.mesh_.n_edges(); i++)
+    {
+        g_l[i] = 0;
+        g_u[i] = 0;
+    }
+    for(int i=dm_.mesh_.n_edges(); i<(int)(dm_.mesh_.n_edges()+dm_.boundaries_[0].bdryVerts.size()); i++)
+    {
+//        g_l[i] = -std::numeric_limits<double>::infinity();
+        g_l[i] = 0;
+        g_u[i] = 0;
+    }
+    for(int i=dm_.mesh_.n_edges()+dm_.boundaries_[0].bdryVerts.size(); i<(int)g.size(); i++)
     {
         g_l[i] = 0;
         g_u[i] = 0;

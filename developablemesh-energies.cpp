@@ -242,58 +242,56 @@ void DevelopableMesh::elasticEnergy(const Eigen::VectorXd &q, double &f, Eigen::
     f *= spring_constant_;
 
     // energy contribution from vertex displacement penalty
-//    OMMesh::VertexIter vi = mesh_.vertices_begin();
-//    for(; vi != mesh_.vertices_end(); vi++){
-//        unsigned int num_adjacent_faces = 0;
-//        Eigen::Vector3d basepos = startq_.segment<3>(3*vi->idx());
+    OMMesh::VertexIter vi = mesh_.vertices_begin();
+    for(; vi != mesh_.vertices_end(); vi++){
+        unsigned int num_adjacent_faces = 0;
+        Eigen::Vector3d basepos = startq_.segment<3>(3*vi->idx());
 
-//        Eigen::Vector3d avg(0,0,0);
+        Eigen::Vector3d avg(0,0,0);
 
-//        for(OMMesh::VertexFaceIter vfi = mesh_.vf_iter(*vi); vfi.is_valid(); vfi++){
-//            unsigned int local_vertex_index = 0;
-//            for(OMMesh::FaceVertexIter fvi = mesh_.fv_iter(*vfi); *fvi!=*vi; fvi++){
-//                local_vertex_index++;
-//            }
-//            avg += q.segment<3>(3*vfi->idx()+local_vertex_index);
-//        }
-//        avg /= num_adjacent_faces;
-//        f += 0.5*(avg-basepos).squaredNorm();
+        for(OMMesh::VertexFaceIter vfi = mesh_.vf_iter(*vi); vfi.is_valid(); vfi++){
+            unsigned int local_vertex_index = 0;
+            for(OMMesh::FaceVertexIter fvi = mesh_.fv_iter(*vfi); *fvi!=*vi; fvi++){
+                local_vertex_index++;
+            }
+            avg += q.segment<3>(3*vfi->idx()+local_vertex_index);
+        }
+        avg /= num_adjacent_faces;
+        f += 0.5*(avg-basepos).squaredNorm();
 
-//        // derivatives
-//        for(int i = 0; i< 3; i++){
-//            for(OMMesh::VertexFaceIter vfi = mesh_.vf_iter(*vi); vfi.is_valid(); vfi++){
-//                unsigned int local_vertex_index_1 = 0;
-//                for(OMMesh::FaceVertexIter fvi = mesh_.fv_iter(*vfi); *fvi!=*vi; fvi++){
-//                    local_vertex_index_1++;
-//                }
-//                Df[3*(3*vfi->idx()+local_vertex_index_1)+i] += (avg[i])/num_adjacent_faces - basepos[i];
+        // derivatives
+        for(int i = 0; i< 3; i++){
+            for(OMMesh::VertexFaceIter vfi = mesh_.vf_iter(*vi); vfi.is_valid(); vfi++){
+                unsigned int local_vertex_index_1 = 0;
+                for(OMMesh::FaceVertexIter fvi = mesh_.fv_iter(*vfi); *fvi!=*vi; fvi++){
+                    local_vertex_index_1++;
+                }
+                Df[3*(3*vfi->idx()+local_vertex_index_1)+i] += (avg[i])/num_adjacent_faces - basepos[i];
 
 
-//                for(OMMesh::VertexFaceIter vfi2 = mesh_.vf_iter(*vi);vfi2.is_valid(); vfi2++){
-//                    unsigned int local_vertex_index_2 = 0;
-//                    for(OMMesh::FaceVertexIter fvi2 = mesh_.fv_iter(*vfi2); fvi2.is_valid(); fvi2++){
-//                        local_vertex_index_2++;
-//                    }
+                for(OMMesh::VertexFaceIter vfi2 = mesh_.vf_iter(*vi);vfi2.is_valid(); vfi2++){
+                    unsigned int local_vertex_index_2 = 0;
+                    for(OMMesh::FaceVertexIter fvi2 = mesh_.fv_iter(*vfi2); fvi2.is_valid(); fvi2++){
+                        local_vertex_index_2++;
+                    }
 
-//                    unsigned int ind1 = 3*(3*vfi->idx()+local_vertex_index_1)+i;
-//                    unsigned int ind2 = 3*(3*vfi2->idx()+local_vertex_index_2)+i;
+                    unsigned int ind1 = 3*(3*vfi->idx()+local_vertex_index_1)+i;
+                    unsigned int ind2 = 3*(3*vfi2->idx()+local_vertex_index_2)+i;
 
-//                    if(ind1 <= ind2){
-//                        Hf.push_back(T(ind1,ind2,1.0/(num_adjacent_faces*num_adjacent_faces)));
+                    if(ind1 <= ind2){
+                        Hf.push_back(T(ind1,ind2,1.0/(num_adjacent_faces*num_adjacent_faces)));
 
-//                    }
-//                }
+                    }
+                }
 
-//            }
-//        }
+            }
+        }
 
-//    }
+    }
 }
 void DevelopableMesh::buildConstraints(const Eigen::VectorXd &q, Eigen::VectorXd &g, std::vector<T> &Dg, vector<vector<T> > &Hg)
 {
     double nembverts = mesh_.n_vertices();
-//    double nmatverts = material_->getMesh().n_vertices();
-//    assert(q.size() == 3*nembverts + 2*nmatverts);
     assert(q.size() == 3*nembverts);
     VectorXd embq = q.segment(0,3*nembverts);
     assert(startq_.size() == 3*nembverts);
@@ -303,27 +301,12 @@ void DevelopableMesh::buildConstraints(const Eigen::VectorXd &q, Eigen::VectorXd
     {
         numconstraints++;
     }
-//    cout << "num edges " << numconstraints << endl;
-//    // top and bottom verts have y values fixed
-//    numconstraints += material_->getBoundaryVerts().size();
-
-//    // bottom verts have x values fixed
-//    int numbottom = 0;
-//    for(int i=0; i<(int)material_->getBoundaryVerts().size(); i++)
-//    {
-//        if(material_->getBoundaryVerts()[i].onBottom)
-//            numbottom++;
-//    }
-//    numconstraints += numbottom;
 
     int numemb = 0;
     // top and bottom of embedded cylinder have zpos fixed
     for(int i=0; i<(int)boundaries_.size(); i++)
         numemb += boundaries_[i].bdryVerts.size();
     numconstraints += numemb;
-
-//    cout << "num boundary vertices " << numemb << endl;
-    // check on the following
 
     g.resize(numconstraints);
     g.setZero();
@@ -340,22 +323,10 @@ void DevelopableMesh::buildConstraints(const Eigen::VectorXd &q, Eigen::VectorXd
         embids[0] = mesh_.from_vertex_handle(heh).idx();
         embids[1] = mesh_.to_vertex_handle(heh).idx();
 
-//        int mateidx = material_->materialEdge(i);
-//        assert(mateidx != -1);
-//        OMMesh::EdgeHandle meh = material_->getMesh().edge_handle(mateidx);
-//        OMMesh::HalfedgeHandle mheh = material_->getMesh().halfedge_handle(meh,0);
-//        int matids[2];
-//        matids[0] = material_->getMesh().from_vertex_handle(mheh).idx();
-//        matids[1] = material_->getMesh().to_vertex_handle(mheh).idx();
-//        Vector3d offset = material_->getOffset(mheh);
-
         Vector3d embedge = embq.segment<3>(3*embids[1]) - embq.segment<3>(3*embids[0]);
         double len1 = embedge.squaredNorm();
         Vector3d startedge = startq_.segment<3>(3*embids[1]) - startq_.segment<3>(3*embids[0]);
         double len2 = startedge.squaredNorm();
-//        Vector2d matedge = matq.segment<2>(2*matids[1]) - matq.segment<2>(2*matids[0]);
-//        matedge += offset.segment<2>(0);
-//        double len2 = matedge.squaredNorm();
 
         g[row] = (len1-len2);
 
@@ -373,18 +344,6 @@ void DevelopableMesh::buildConstraints(const Eigen::VectorXd &q, Eigen::VectorXd
                 Hgentry.push_back((T(3*embids[1]+j, 3*embids[0]+j, -2.0)));
             Hgentry.push_back((T(3*embids[1]+j, 3*embids[1]+j, 2.0)));
         }
-//        for(int j=0; j<2; j++)
-//        {
-//            Dg.push_back(T(row, 3*nembverts + 2*matids[0]+j, 2.0*matedge[j]));
-//            Dg.push_back(T(row, 3*nembverts + 2*matids[1]+j, -2.0*matedge[j]));
-
-//            Hgentry.push_back((T(3*nembverts + 2*matids[0]+j, 3*nembverts + 2*matids[0]+j, -2.0)));
-//            if(matids[0] < matids[1])
-//                Hgentry.push_back((T(3*nembverts + 2*matids[0]+j, 3*nembverts + 2*matids[1]+j, 2.0)));
-//            else
-//                Hgentry.push_back((T(3*nembverts + 2*matids[1]+j, 3*nembverts + 2*matids[0]+j, 2.0)));
-//            Hgentry.push_back((T(3*nembverts + 2*matids[1]+j, 3*nembverts + 2*matids[1]+j, -2.0)));
-//        }
         Hg.push_back(Hgentry);
         row++;
     }
@@ -395,14 +354,6 @@ void DevelopableMesh::buildConstraints(const Eigen::VectorXd &q, Eigen::VectorXd
         {
             Vector3d targetpt = boundaries_[i].bdryPos[j];
             int vidx = boundaries_[i].bdryVerts[j];
-//            for(int k=0; k<3; k++)
-//            {
-//                g[row] = embq[3*vidx+k] - targetpt[k];
-//                Dg.push_back(T(row, 3*vidx+k, 1.0));
-//                vector<T> Hgentry;
-//                Hg.push_back(Hgentry);
-//                row++;
-//            }
             g[row] = embq[3*vidx+2] - targetpt[2];
             Dg.push_back(T(row, 3*vidx+2, 1.0));
             vector<T> Hgentry;
@@ -410,6 +361,7 @@ void DevelopableMesh::buildConstraints(const Eigen::VectorXd &q, Eigen::VectorXd
             row++;
         }
     }
+
 
     assert(row == numconstraints);
     assert((int)Hg.size() == numconstraints);

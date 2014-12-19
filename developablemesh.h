@@ -35,6 +35,8 @@ public:
     void buildSchwarzLantern(double r, double h, int n, int m, double angle, bool open, bool springs);
     void buildOpenSchwarzLantern(double r, double h, int n, int m, double angle);
     bool loadOBJPair(const char *mesh3D, const char *mesh2D, double W, double H);
+    bool setupMesh();
+
     virtual bool loadFromStream(std::istream &is);
     virtual bool saveToStream(std::ostream &os);
 
@@ -82,6 +84,7 @@ private:
 
     void flushOutNANs(const Eigen::VectorXd &q);
     void perturbConfiguration(Eigen::VectorXd &q, const std::vector<Eigen::VectorXd> &dirs, double mag);
+friend class ProjectionNLP;
 };
 
 #endif // DEVELOPABLEMESH_H

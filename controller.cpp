@@ -74,12 +74,7 @@ void Controller::newSchwarzLantern()
     bool open = FALSE;
     bool springs = FALSE;
     mw_.launchSchwarzLanternDialog(r, h, n, m, angle,open,springs);
-//    if(open){
-//        m_.buildOpenSchwarzLantern(r, h, n, m, angle,springs);
-//    }
-//    else{
     m_.buildSchwarzLantern(r,h,n,m,angle,open,springs);
-//    }
     mw_.centerCamera();
 }
 
@@ -95,6 +90,7 @@ void Controller::repaintCallback()
     fname << "frame" << setw(6) << setfill('0') << frame++ << ".png";
     mw_.repaintMesh();
     mw_.saveScreenshot(fname.str());
+//    cout << "frame saved to " << "frame" << setw(6) << setfill('0') << (frame-1) << endl;
 }
 
 void Controller::exportOBJ(const char *filename)
@@ -113,5 +109,9 @@ void Controller::importOBJ(const char *filename)
         QString msg = "Couldn't read file " + QString(filename) + ". Import failed.";
         QMessageBox::warning(&mw_, "Couldn't read File", msg, QMessageBox::Ok);
         return;
+    }
+    if(!m_.setupMesh()){
+        QString msg = "Error while creating boundary structure!";
+        QMessageBox::warning(&mw_, "Could not create boundary", msg, QMessageBox::Ok);
     }
 }

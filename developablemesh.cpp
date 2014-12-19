@@ -1,13 +1,16 @@
 #include "developablemesh.h"
+#include <iomanip>
 #include <Eigen/Core>
 #include <Eigen/Sparse>
 #include <Eigen/Geometry>
 #include <set>
 #include "coin/IpIpoptApplication.hpp"
 #include <QGLWidget>
+#include <QDir>
 #include <Eigen/Dense>
 #include "mathutil.h"
 #include "projectionnlp.h"
+#include "controller.h"
 
 using namespace Eigen;
 using namespace std;
@@ -148,7 +151,7 @@ void DevelopableMesh::projectOntoConstraintManifold(DeformCallback &dc)
     gatherDOFs(q,v);
 
     cout << "Initial equality violation: " << equalityConstraintViolation(q) << endl;
-
+    cout << "no of DOF " << startq_.size() << endl;
     SmartPtr<ProjectionNLP> pnlp = new ProjectionNLP(*this, dc, q);
 
     IpoptApplication app;
@@ -172,74 +175,79 @@ void DevelopableMesh::projectOntoConstraintManifold(DeformCallback &dc)
 
 void DevelopableMesh::crushLantern(DeformCallback &dc, double dt)
 {
-    double crushspeed = 1;
-    int steps = (int)(1.0/crushspeed/dt);
+    double crushspeed = 0.05;
+    int steps = (int)(0.05/crushspeed/dt);
 //    int steps = 100;
-    int framestep = steps/1000;
-//    int framestep = steps;
+//    int framestep = steps/1000;
+    int framestep = 10;
     VectorXd q, v;
     gatherDOFs(q,v);
 
-    for(int j=0; j<(int)boundaries_[0].bdryPos.size(); j++)
-    {
-            cout << j << "\t" << boundaries_[0].bdryVerts[j] << " " << boundaries_[0].bdryPos[j][2] << endl;
-    }
-    for(int j=0; j<(int)boundaries_[1].bdryPos.size(); j++)
-    {
-        cout << j << "\t" << boundaries_[1].bdryVerts[j] << " " << boundaries_[1].bdryPos[j][2] << endl;
-    }
-    cout << boundaries_[0].bdryVerts.size() << endl;
-    cout << boundaries_[1].bdryVerts.size() << endl;
-    cout << "Closing distance error: " << q.segment<3>(3*boundaries_[0].bdryVerts[4]) << " vs " << q.segment<3>(boundaries_[0].bdryVerts[0]) << endl;
-    cout << "Constraint violation: " << equalityConstraintViolation(q) << endl;
+//    assert(boundaries_[0].bdryVerts.size()>=4);
+//    assert(startq_.size()==33);
+//    for(int i = 0; i < (int)boundaries_.size(); i++)
+//    {
+//        for(int j=0; j<(int)boundaries_[i].bdryVerts.size(); j++)
+//        {
+//            cout << j << "th vector should\n" << boundaries_[i].bdryPos[j] << endl;
+//            cout << j << "th vector is\n" << startq_.segment<3>(3*boundaries_[i].bdryVerts[j]) << endl;
+//        }
+//    }
+    Vector3d e1 = startq_.segment<3>(3*boundaries_[0].bdryVerts[1])-startq_.segment<3>(3*boundaries_[0].bdryVerts[0]);
+    Vector3d e2 = startq_.segment<3>(3*boundaries_[0].bdryVerts[2])-startq_.segment<3>(3*boundaries_[0].bdryVerts[1]);
+    double angle = acos((e1.dot(e2))/(e1.norm()*e2.norm()))*180.0/(M_PI);
+    cout << "Initial turning angle top: " << angle << endl;
+
+//    e1 = startq_.segment<3>(3*boundaries_[1].bdryVerts[1])-startq_.segment<3>(3*boundaries_[1].bdryVerts[0]);
+//    e2 = startq_.segment<3>(3*boundaries_[1].bdryVerts[3])-startq_.segment<3>(3*boundaries_[1].bdryVerts[2]);
+//    angle = acos(e1.dot(e2)/(e1.norm()*e2.norm()))*180.0/(M_PI);
+//    cout << "Initial turning angle bottom: " << setprecision(7) <<  angle << endl;
 
     cout << "crushing!" << endl;
+    double height = fabs(startq_[3*boundaries_[0].bdryVerts[0]+2]-startq_[3*boundaries_[1].bdryVerts[0]+2]);
+    cout << "initial height: " << height << endl;
     for(int i=0; i<steps; i++)
     {
-//        v *= 0.9;
-//        double k = 100;
-//        q += dt*v;
-//        repopulateDOFs(q, v);
-        for(int j=0; j<(int)boundaries_[1].bdryPos.size(); j++)
+        for(int j=0; j<(int)boundaries_[0].bdryPos.size(); j++)
         {
-                boundaries_[1].bdryPos[j][2] -= crushspeed*dt;
+                boundaries_[0].bdryPos[j][2] -= crushspeed*dt;
         }
+        height -= crushspeed*dt;
         cout << "Projecting!" << endl;
         projectOntoConstraintManifold(dc);
-
-//        int collapseid = findCollapsibleEdge(q);
-//        while(collapseid != -1)
-//        {
-//            cout << "Collapse!" << endl;
-//            assert(canCollapseEdge(collapseid));
-//            collapseEdge(collapseid);
-//            projectOntoConstraintManifold(dc);
-//            collapseid = findCollapsibleEdge(q);
-//        }
-//        gatherDOFs(q, v);
-
-//        double f;
-//        VectorXd Df;
-//        vector<T> Hf;
-//        buildObjective(q, f, Df, Hf);
-//        v += -dt*k*Df;
-        if(i%framestep == 0)
-            dc.repaintCallback();
-    }
+        if(i%framestep == 0){
+            static int frame=1;
+            stringstream fname;
+            fname << "frame" << setw(6) << setfill('0') << frame++ << ".obj";
+            QString curdir = QDir::currentPath();
+            string fullname = string(curdir.toStdString()) + "/output/" + fname.str();
+            exportOBJ(fullname.c_str());
+            cout << "Mesh exported to " << fullname << endl;
+//            dc.repaintCallback();
+        }
+     }
 //    repopulateDOFs(q,v);
     gatherDOFs(q,v);
 
-    for(int i = 0; i < (int)boundaries_.size(); i++)
-    {
-        for(int j=0; j<(int)boundaries_[i].bdryVerts.size(); j++)
-        {
-            cout << j << "th vector should\n" << boundaries_[i].bdryPos[j] << endl;
-            cout << j << "th vector is\n" << q.segment<3>(3*boundaries_[i].bdryVerts[j]) << endl;
-        }
-    }
+//    for(int i = 0; i < (int)boundaries_.size(); i++)
+//    {
+//        for(int j=0; j<(int)boundaries_[i].bdryVerts.size(); j++)
+//        {
+//            cout << j << "th vector should\n" << boundaries_[i].bdryPos[j] << endl;
+//            cout << j << "th vector is\n" << q.segment<3>(3*boundaries_[i].bdryVerts[j]) << endl;
+//        }
+//    }
+    cout << "final height: " << height << endl;
+    e1 = q.segment<3>(3*boundaries_[0].bdryVerts[1])-q.segment<3>(3*boundaries_[0].bdryVerts[0]);
+    e2 = q.segment<3>(3*boundaries_[0].bdryVerts[2])-q.segment<3>(3*boundaries_[0].bdryVerts[1]);
+    angle = acos(e1.dot(e2)/(e1.norm()*e2.norm()))*180.0/(M_PI);
+    cout << "Final turning angle top: " << setprecision(7) <<  angle << endl;
+
+//    e1 = q.segment<3>(3*boundaries_[1].bdryVerts[1])-q.segment<3>(3*boundaries_[1].bdryVerts[0]);
+//    e2 = q.segment<3>(3*boundaries_[1].bdryVerts[3])-q.segment<3>(3*boundaries_[1].bdryVerts[1]);
+//    angle = acos(e1.dot(e2)/(e1.norm()*e2.norm()))*180.0/(M_PI);
+//    cout << "Final turning angle bottom: " << setprecision(7) <<  angle << endl;
     cout << "Crushed!" << endl;
-    cout << "Closing points error: " << q.segment<3>(3*4) << " vs " << q.segment<3>(0) << endl;
-    cout << "Closing distance error: " << (q.segment<3>(3*4)-q.segment<3>(0)).squaredNorm()<< endl;
     cout << "Constraint violation: " << equalityConstraintViolation(q) << endl;
 }
 
